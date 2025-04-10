@@ -2,10 +2,10 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 
 import { db } from "@/firebase/admin";
-import { getRandomInterviewCover } from "@/lib/utils";
+
 
 export async function POST(request: Request) {
-  const { type, role, level, techstack, , userid } = await request.json();
+  const { type, role, level, techstack,  userid } = await request.json();
 
   try {
     const { text: questions } = await generateText({
