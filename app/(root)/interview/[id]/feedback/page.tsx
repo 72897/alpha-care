@@ -1,3 +1,4 @@
+import DownloadFeedbackPDF from '@/components/DownloadFeedback';
 import { Button } from '@/components/ui/button';
 import { getCurrentUser } from '@/lib/actions/auth.action';
 import {
@@ -25,6 +26,12 @@ const page = async ({ params }: RouteParams) => {
   return (
     <>
       <section className='section-feedback'>
+        <div className='flex justify-center items-center'>
+          <DownloadFeedbackPDF
+            interviewTitle={interview.role}
+            feedback={feedback}
+          />
+        </div>
         <div className='flex flex-row justify-center'>
           <h1 className='text-4xl font-semibold'>
             Feedback on the Checkup -{' '}

@@ -131,3 +131,52 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+
+//delete user
+export async function deleteUser() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("session")?.value;
+  if (!sessionCookie) return { success: false, message: "No session found" };
+
+  try {
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const uid = decodedClaims.uid;
+
+    // 1. Delete user from Firestore
+    await db.collection("users").doc(uid).delete();
+
+    // If you store nested data like feedback/interviews, delete them too:
+    const feedbackSnapshot = await db
+      .collection("feedback")
+      .where("userId", "==", uid)
+      .get();
+
+    feedbackSnapshot.forEach((doc) => {
+      doc.ref.delete();
+    });
+
+    const interviewSnapshot = await db
+      .collection("interviews")
+      .where("userId", "==", uid)
+      .get();
+
+    interviewSnapshot.forEach((doc) => {
+      doc.ref.delete();
+    });
+
+    // 2. Delete the Firebase Auth user
+    await auth.deleteUser(uid);
+
+    // 3. Remove session cookie
+    cookieStore.delete("session");
+
+    return { success: true, message: "User and data deleted successfully." };
+  } catch (error: any) {
+    console.error("Error deleting user:", error);
+    return {
+      success: false,
+      message: "Failed to delete user. Please try again.",
+    };
+  }
+}

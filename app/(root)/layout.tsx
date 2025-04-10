@@ -1,3 +1,5 @@
+import FitnessReminder from '@/components/FitnessReminder';
+import Dropdown from '@/components/ui/Dropdown';
 import { Separator } from '@/components/ui/separator';
 import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react';
 import Image from 'next/image';
@@ -5,20 +7,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ReactNode } from 'react';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import {
-  getCurrentUser,
-  isAuthenticated,
-  signOut,
-} from '@/lib/actions/auth.action';
+import { getCurrentUser, isAuthenticated } from '@/lib/actions/auth.action';
 
 const Layout = async ({ children }: { children: ReactNode }) => {
   const isUserAuthenticated = await isAuthenticated();
@@ -39,57 +28,18 @@ const Layout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <div className='root-layout'>
-      {/* Navbar */}
+      {/* Navbar */} <FitnessReminder />
       <nav className='flex items-center justify-between px-6 py-4 shadow-sm'>
         <Link href='/' className='flex items-center gap-2'>
           <Image src='/logo.svg' alt='MockMate Logo' width={38} height={32} />
           <h2 className='text-xl font-semibold text-primary'>Alpha-Care</h2>
         </Link>
 
-        <form
-          action={async () => {
-            'use server';
-            await signOut();
-          }}
-        >
-          <div className='flex items-center gap-4 '>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className='w-10 h-10 cursor-pointer'>
-                  <AvatarImage
-                    src={user?.image || ''}
-                    alt={user?.name || 'User'}
-                  />
-                  <AvatarFallback>{initial(user?.name)}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent className='rounded-full'>
-                <form
-                  action={async () => {
-                    'use server';
-                    await signOut();
-                  }}
-                >
-                  <DropdownMenuItem asChild>
-                    <Button
-                      type='submit'
-                      variant='ghost'
-                      className='w-full justify-start'
-                    >
-                      Sign Out
-                    </Button>
-                  </DropdownMenuItem>
-                </form>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </form>
+        <div className='flex items-center gap-4 '></div>
+        <Dropdown />
       </nav>
-
       {/* Page Content */}
       <main className='p-6'>{children}</main>
-
       {/* Footer */}
       <footer className='bg-gray-950 text-gray-200 py-12 px-6 md:px-16 w-full'>
         <div className='max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8'>
