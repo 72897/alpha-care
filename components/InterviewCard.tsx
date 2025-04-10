@@ -50,7 +50,7 @@ const InterviewCard = async ({
             height={90}
             className='rounded-full object-fit size-[90px] bg-black outline hover:shadow-lg transition-transform transform hover:scale-125'
           />
-          <h3 className='mt-5 capitalize'>{role} Interview</h3>
+          <h3 className='mt-5 capitalize'>{role} Checkup</h3>
           <div className='flex flex-row gap-5 mt-3'>
             <div className='flex flex-row gap-5 mt-3'>
               <Image
