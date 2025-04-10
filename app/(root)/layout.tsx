@@ -1,4 +1,3 @@
-import FitnessReminder from '@/components/FitnessReminder';
 import Dropdown from '@/components/ui/Dropdown';
 import { Separator } from '@/components/ui/separator';
 import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react';
@@ -28,7 +27,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <div className='root-layout'>
-      {/* Navbar */} <FitnessReminder />
+      {/* Navbar */}
       <nav className='flex items-center justify-between px-6 py-4 shadow-sm'>
         <Link href='/' className='flex items-center gap-2'>
           <Image src='/logo.svg' alt='MockMate Logo' width={38} height={32} />
