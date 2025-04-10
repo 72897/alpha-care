@@ -22,7 +22,7 @@ const page = async () => {
 
   return (
     <>
-      <section className='card-cta'>
+      <section className='card-cta '>
         <div className='flex flex-col gap-6 max-w-lg'>
           <h2>
             {' '}

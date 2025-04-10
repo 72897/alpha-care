@@ -107,35 +107,35 @@ const Layout = async ({ children }: { children: ReactNode }) => {
               <Link
                 href='https://github.com'
                 target='_blank'
-                className='hover:text-primary'
+                className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
                 <Github size={22} />
               </Link>
               <Link
                 href='https://twitter.com'
                 target='_blank'
-                className='hover:text-primary'
+                className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
                 <Twitter size={22} />
               </Link>
               <Link
                 href='https://instagram.com'
                 target='_blank'
-                className='hover:text-primary'
+                className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
                 <Instagram size={22} />
               </Link>
               <Link
                 href='https://linkedin.com'
                 target='_blank'
-                className='hover:text-primary'
+                className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
                 <Linkedin size={22} />
               </Link>
               <Link
                 href='https://facebook.com'
                 target='_blank'
-                className='hover:text-primary'
+                className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
                 <Facebook size={22} />
               </Link>
@@ -147,7 +147,14 @@ const Layout = async ({ children }: { children: ReactNode }) => {
 
         <div className='text-center text-sm text-gray-500'>
           © {new Date().getFullYear()} Alpha-Care. All rights reserved. Built
-          with ❤️ by Team Alpha-care.
+          with ❤️ by{' '}
+          <a
+            href='mailto: kunalsingh203001@gmail.com'
+            className='hover:underline text-primary-500'
+          >
+            Team Alpha-care
+          </a>
+          .
         </div>
       </footer>
     </div>

@@ -7,7 +7,7 @@ import styled from 'styled-components';
 
 const Checkbox = () => {
   return (
-    <StyledWrapper className='mr-7 hidden md:block'>
+    <StyledWrapper className='mr-7  md:block'>
       <label className='popup'>
         <input type='checkbox' />
         <div className='burger' tabIndex={0}>
@@ -106,7 +106,7 @@ const StyledWrapper = styled.div`
     --nav-button-padding-y: 0.375em;
     --nav-button-border-radius: 0.375em;
     --nav-button-font-size: 12px;
-    --nav-button-hover-bg: #6495ed;
+    --nav-button-hover-bg: #1b263b;
     --nav-button-hover-text-color: #fff;
     --nav-button-distance: 0.875em;
     /* underline */
