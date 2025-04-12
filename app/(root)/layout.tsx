@@ -84,7 +84,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
               </li>
               <li>
                 <Link href='/interviews' className='hover:text-primary'>
-                  My Interviews
+                  My Checkups
                 </Link>
               </li>
               <li>
