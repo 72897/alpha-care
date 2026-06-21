@@ -7,8 +7,6 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 const InterviewCard = async ({
   id,
-
-  userId,
   role,
   type,
   createdAt,

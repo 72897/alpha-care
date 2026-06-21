@@ -10,7 +10,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { messages } = await request.json();
+    const { messages } = (await request.json()) as {
+      messages: { role: "user" | "assistant" | "system"; content: string }[];
+    };
 
     // Fetch user's checkups and feedbacks from Firestore to build context
     const interviewsSnapshot = await db
@@ -21,7 +23,7 @@ export async function POST(request: Request) {
     const interviews = interviewsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as any[];
+    })) as Interview[];
 
     interviews.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     const slicedInterviews = interviews.slice(0, 10);
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
       const feedbacks = feedbackSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      })) as any[];
+      })) as Feedback[];
 
       feedbacks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       const slicedFeedbacks = feedbacks.slice(0, 10);
@@ -48,11 +50,11 @@ export async function POST(request: Request) {
           const focusName = matchInt ? `${matchInt.role} (${matchInt.type})` : "General";
           return `Checkup #${index + 1} - ${focusName} on ${new Date(f.createdAt).toLocaleDateString()}:
 - Total Score: ${f.totalScore}/100
-- Sleep Quality: ${f.categoryScores?.find((c: any) => c.name === "Sleep Quality")?.score || "N/A"}/100
-- Nutritional Balance: ${f.categoryScores?.find((c: any) => c.name === "Nutritional Balance")?.score || "N/A"}/100
-- Stress & Mental Wellness: ${f.categoryScores?.find((c: any) => c.name === "Stress & Mental Wellness")?.score || "N/A"}/100
-- Physical Activity: ${f.categoryScores?.find((c: any) => c.name === "Physical Activity")?.score || "N/A"}/100
-- Vital Signs: ${f.categoryScores?.find((c: any) => c.name === "Vital Signs & Body Metrics")?.score || "N/A"}/100
+- Sleep Quality: ${f.categoryScores?.find((c) => c.name === "Sleep Quality")?.score || "N/A"}/100
+- Nutritional Balance: ${f.categoryScores?.find((c) => c.name === "Nutritional Balance")?.score || "N/A"}/100
+- Stress & Mental Wellness: ${f.categoryScores?.find((c) => c.name === "Stress & Mental Wellness")?.score || "N/A"}/100
+- Physical Activity: ${f.categoryScores?.find((c) => c.name === "Physical Activity")?.score || "N/A"}/100
+- Vital Signs: ${f.categoryScores?.find((c) => c.name === "Vital Signs & Body Metrics")?.score || "N/A"}/100
 - Strengths: ${f.strengths?.join(", ") || "None mentioned"}
 - Areas for Improvement: ${f.areasForImprovement?.join(", ") || "None mentioned"}
 - Doctor's Final Assessment: ${f.finalAssessment}
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
     `;
 
     // Map client messages to Gemini content format
-    const formattedMessages = messages.map((m: any) => ({
+    const formattedMessages = messages.map((m) => ({
       role: m.role,
       content: m.content,
     }));
@@ -89,14 +91,15 @@ export async function POST(request: Request) {
       });
 
       return Response.json({ text: response.text });
-    } catch (geminiError: any) {
+    } catch (geminiError) {
       console.error("Gemini API call failed in chat:", geminiError);
       return Response.json({ 
         text: "I am having trouble connecting to my cognitive system right now (Gemini rate-limited). However, I've successfully saved all your checkup files. Please ask me again in a moment, or view your history log!" 
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in chat route:", error);
-    return Response.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }

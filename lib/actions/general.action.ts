@@ -248,7 +248,7 @@ export async function getLatestUserFeedback(): Promise<Feedback | null> {
     const feedbacks = feedbackSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as any[];
+    })) as Feedback[];
     
     feedbacks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return feedbacks[0] as Feedback;

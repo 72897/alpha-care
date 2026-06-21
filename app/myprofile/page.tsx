@@ -12,14 +12,22 @@ import { useEffect, useState, useTransition } from 'react';
 import { IoMdExit } from 'react-icons/io';
 import { toast } from 'sonner';
 import { Edit2, Award, Clipboard, ChevronLeft, User as UserIcon } from 'lucide-react';
+/* eslint-disable @next/next/no-img-element */
 import TrendChart from '@/components/TrendChart';
 import DownloadFeedbackPDF from '@/components/DownloadFeedback';
 import Image from 'next/image';
 
+type DbUser = {
+  id: string;
+  name: string;
+  email: string;
+  focusArea?: string;
+};
+
 const ProfileCard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [avatarSeed, setAvatarSeed] = useState<string>('');
-  const [dbUser, setDbUser] = useState<any>(null);
+  const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [stats, setStats] = useState<{ avgScore: number; count: number }>({ avgScore: 0, count: 0 });
   const [latestReport, setLatestReport] = useState<Feedback | null>(null);
   const [history, setHistory] = useState<Feedback[]>([]);
@@ -85,7 +93,7 @@ const ProfileCard = () => {
       });
       if (res.success) {
         toast.success(res.message);
-        setDbUser((prev: any) => ({ ...prev, name: nameInput, focusArea: focusAreaInput }));
+        setDbUser((prev) => prev ? { ...prev, name: nameInput, focusArea: focusAreaInput } : null);
         setIsEditing(false);
       } else {
         toast.error(res.message);

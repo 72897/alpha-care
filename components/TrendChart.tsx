@@ -226,7 +226,7 @@ export default function TrendChart({ history }: TrendChartProps) {
           </div>
           {points[hoveredIndex].data.categoryScores && (
             <div className='space-y-1 text-[9px] text-gray-300'>
-              {points[hoveredIndex].data.categoryScores.slice(0, 3).map((cat: any) => (
+              {points[hoveredIndex].data.categoryScores.slice(0, 3).map((cat: { name: string; score: number }) => (
                 <div key={cat.name} className='flex justify-between gap-2'>
                   <span className='truncate'>{cat.name}</span>
                   <span className='font-bold'>{cat.score}</span>
