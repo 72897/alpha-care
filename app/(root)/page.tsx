@@ -1,6 +1,8 @@
+import AppointmentForm from '@/components/AppointmentForm';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import InterviewCard from '@/components/InterviewCard';
 import { getCurrentUser } from '@/lib/actions/auth.action';
@@ -11,14 +13,15 @@ import {
 
 const page = async () => {
   const user = await getCurrentUser();
+  if (!user) redirect('/sign-in');
 
   const [userInterviews, latestInterviews] = await Promise.all([
-    getInterviewsByUserId(user?.id!),
-    getLatestInterviews({ userId: user?.id! }),
+    getInterviewsByUserId(),
+    getLatestInterviews({ userId: user.id }),
   ]);
 
-  const hasPastInterviews = userInterviews?.length! > 0;
-  const hasUpcomingInterviews = latestInterviews?.length! > 0;
+  const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
+  const hasUpcomingInterviews = (latestInterviews?.length ?? 0) > 0;
 
   return (
     <>
@@ -70,6 +73,15 @@ const page = async () => {
           ) : (
             <p>There are no new checkup available yet</p>
           )}
+        </div>
+      </section>
+
+      {/* qwert */}
+      <section className='  flex flex-col gap-6 mt-8'>
+        <h2>Book an appointment with a real doctor</h2>
+
+        <div className='interviews-section'>
+          <AppointmentForm />
         </div>
       </section>
     </>

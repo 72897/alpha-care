@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils';
 import { vapi } from '@/lib/vapi.sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -75,7 +77,7 @@ const Agent = ({
     };
   }, []);
 
-  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+  const handleGenerateFeedback = useCallback(async (messages: SavedMessage[]) => {
     console.log('Generating feedback here');
 
     //Create a server action that Generate feedback and save it to the database
@@ -91,31 +93,59 @@ const Agent = ({
       console.log('Error saving feedback');
       router.push('/');
     }
-  };
+  }, [interviewId, userId, router]);
+
+  const handleGenerateInterview = useCallback(async (messages: SavedMessage[]) => {
+    try {
+      toast.loading('Analyzing conversation and scheduling checkup...');
+      const response = await fetch('/api/vapi/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userid: userId,
+          transcript: messages,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.dismiss();
+        toast.success('Checkup successfully created!');
+      } else {
+        toast.dismiss();
+        toast.error('Failed to save checkup.');
+      }
+    } catch (error) {
+      console.error('Error saving checkup:', error);
+      toast.dismiss();
+      toast.error('Error saving checkup.');
+    } finally {
+      router.push('/');
+    }
+  }, [userId, router]);
 
   useEffect(() => {
     if (callStatus === CallStatus.FINISHED) {
       if (type === 'generate') {
-        router.push('/');
+        handleGenerateInterview(messages);
       } else {
         handleGenerateFeedback(messages);
       }
     }
-  }, [messages, callStatus, type, userId]);
+  }, [messages, callStatus, type, handleGenerateInterview, handleGenerateFeedback]);
 
   const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
   // console.log("Workflow ID:", workflowId);
   // console.log("User:", userName, userId);
 
-  if (!workflowId) {
-    alert('Workflow ID is missing. Check your .env.local file.');
-    return;
-  }
-
   const handleCall = async () => {
-    setCallStatus(CallStatus.CONNECTING);
-
     if (type === 'generate') {
+      if (!workflowId) {
+        toast.error('Workflow ID is missing. Check your .env.local file.');
+        return;
+      }
+      setCallStatus(CallStatus.CONNECTING);
       await vapi.start(workflowId, {
         variableValues: {
           username: userName,
@@ -123,6 +153,7 @@ const Agent = ({
         },
       });
     } else {
+      setCallStatus(CallStatus.CONNECTING);
       let formattedQuestions = '';
       if (questions) {
         formattedQuestions = questions

@@ -13,13 +13,15 @@ import { redirect } from 'next/navigation';
 const page = async ({ params }: RouteParams) => {
   const { id } = await params;
   const user = await getCurrentUser();
+  if (!user) redirect('/sign-in');
 
   const interview = await getInterviewsById(id);
   if (!interview) redirect('/');
   const feedback = await getFeedbackByInterviewId({
     interviewId: id,
-    userId: user?.id!,
+    userId: user.id,
   });
+  if (!feedback) redirect('/');
 
   console.log('feedback', feedback);
 

@@ -180,3 +180,25 @@ export async function deleteUser() {
     };
   }
 }
+
+// Update User Profile
+export async function updateUserProfile(params: { name: string; focusArea: string }) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("session")?.value;
+  if (!sessionCookie) return { success: false, message: "No session found" };
+
+  try {
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const uid = decodedClaims.uid;
+
+    await db.collection("users").doc(uid).update({
+      name: params.name,
+      focusArea: params.focusArea,
+    });
+
+    return { success: true, message: "Profile updated successfully." };
+  } catch (error: any) {
+    console.error("Error updating profile:", error);
+    return { success: false, message: "Failed to update profile." };
+  }
+}

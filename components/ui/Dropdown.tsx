@@ -1,15 +1,38 @@
 'use client';
 
 import { signOut } from '@/lib/actions/auth.action';
+import { Bot, History } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { IoMdExit } from 'react-icons/io';
 import styled from 'styled-components';
 
 const Checkbox = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      wrapperRef.current &&
+      !wrapperRef.current.contains(event.target as Node)
+    ) {
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <StyledWrapper className='mr-7  md:block'>
+    <StyledWrapper className='mr-7 md:block' ref={wrapperRef}>
       <label className='popup'>
-        <input type='checkbox' />
+        <input
+          type='checkbox'
+          checked={isOpen}
+          onChange={(e) => setIsOpen(e.target.checked)}
+        />
         <div className='burger' tabIndex={0}>
           <span />
           <span />
@@ -40,6 +63,28 @@ const Checkbox = () => {
                   <span>Profile</span>
                 </button>
               </Link>
+            </li>
+
+            <li>
+              <Link href='/chat'>
+                <button>
+                  <Bot size={14} />
+                  <span>AI Chatbot</span>
+                </button>
+              </Link>
+            </li>
+
+            <li>
+              <Link href='/history'>
+                <button>
+                  <History size={14} />
+                  <span>History</span>
+                </button>
+              </Link>
+            </li>
+
+            <li>
+              <hr />
             </li>
 
             <li>
@@ -167,6 +212,7 @@ const StyledWrapper = styled.div`
   }
 
   .popup-window {
+    z-index: 50;
     transform: scale(var(--nav-default-scale));
     visibility: hidden;
     opacity: 0;
@@ -217,17 +263,7 @@ const StyledWrapper = styled.div`
     column-gap: var(--nav-button-distance);
   }
 
-  .popup-window ul li:nth-child(1) svg,
-  .popup-window ul li:nth-child(2) svg {
-    color: white;
-  }
-
-  .popup-window ul li:nth-child(4) svg,
-  .popup-window ul li:nth-child(5) svg {
-    color: white;
-  }
-
-  .popup-window ul li:nth-child(7) svg {
+  .popup-window ul button svg {
     color: white;
   }
 

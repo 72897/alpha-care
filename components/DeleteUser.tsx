@@ -30,7 +30,10 @@ export default function DeleteUserModal() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant='destructive' className='mt-4'>
+        <Button
+          variant='destructive'
+          className='mt-4 hover:transform transition-all hover:scale-105 bg-red-700 '
+        >
           Delete
         </Button>
       </DialogTrigger>

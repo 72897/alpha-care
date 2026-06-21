@@ -8,7 +8,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Controller, FieldValues, Path, Control } from 'react-hook-form';
 
-interface FormFileProps<T> extends FieldValues {
+interface FormFileProps<T extends FieldValues> {
   control: Control<T>;
   name: Path<T>;
   // name: string;
@@ -18,7 +18,7 @@ interface FormFileProps<T> extends FieldValues {
   // type?: "text" | "email" | "password" | "file";
 }
 
-const FormField = ({
+const FormField = <T extends FieldValues>({
   control,
   name,
   label,

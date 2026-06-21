@@ -6,24 +6,11 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ReactNode } from 'react';
 
-import { getCurrentUser, isAuthenticated } from '@/lib/actions/auth.action';
+import { isAuthenticated } from '@/lib/actions/auth.action';
 
 const Layout = async ({ children }: { children: ReactNode }) => {
   const isUserAuthenticated = await isAuthenticated();
   if (!isUserAuthenticated) redirect('/sign-in');
-
-  const user = await getCurrentUser();
-
-  function initial(fullName?: string): string {
-    if (!fullName) return 'K';
-
-    const names = fullName.trim().split(' ');
-    if (names.length >= 2) {
-      return names[0][0].toUpperCase() + names[1][0].toUpperCase();
-    } else {
-      return names[0].slice(0, 2).toUpperCase();
-    }
-  }
 
   return (
     <div className='root-layout'>
@@ -61,16 +48,14 @@ const Layout = async ({ children }: { children: ReactNode }) => {
             <p className='text-sm text-gray-400'>
               Email:{' '}
               <a
-                href='mailto:support@aitern.com'
+                href='mailto:kunalsingh203001@gmail.com'
                 className='text-primary-500 hover:underline'
               >
-                support@alpha-care.com
+                kunalsingh203001@gmail.com
               </a>
             </p>
-            <p className='text-sm text-gray-400'>Phone: +91 98765 43210</p>
-            <p className='text-sm text-gray-400'>
-              Gautam Buddha University, Greater Noida
-            </p>
+            <p className='text-sm text-gray-400'>Phone: +91 94564 73642</p>
+            <p className='text-sm text-gray-400'>Noida, Uttar Pradesh, India</p>
           </div>
 
           {/* Navigation Links */}
@@ -83,18 +68,18 @@ const Layout = async ({ children }: { children: ReactNode }) => {
                 </Link>
               </li>
               <li>
-                <Link href='/interviews' className='hover:text-primary'>
+                <Link href='/chat' className='hover:text-primary'>
+                  AI Chatbot
+                </Link>
+              </li>
+              <li>
+                <Link href='/history' className='hover:text-primary'>
                   My Checkups
                 </Link>
               </li>
               <li>
-                <Link href='/about' className='hover:text-primary'>
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href='/contact' className='hover:text-primary'>
-                  Contact
+                <Link href='/myprofile' className='hover:text-primary'>
+                  My Profile
                 </Link>
               </li>
             </ul>
@@ -105,7 +90,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
             <h4 className='text-xl font-bold mb-4 text-white'>Follow Us</h4>
             <div className='flex gap-4'>
               <Link
-                href='https://github.com'
+                href='https://github.com/72897'
                 target='_blank'
                 className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >
@@ -126,7 +111,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
                 <Instagram size={22} />
               </Link>
               <Link
-                href='https://linkedin.com'
+                href='https://www.linkedin.com/in/kunal-singh-454368289/'
                 target='_blank'
                 className='hover:text-primary transform translate-y-0 hover:-translate-y-1 transition-all duration-200'
               >

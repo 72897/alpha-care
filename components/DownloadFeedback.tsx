@@ -5,7 +5,7 @@ import { jsPDF } from 'jspdf';
 
 type DownloadFeedbackPDFProps = {
   interviewTitle: string;
-  feedback: any;
+  feedback: Feedback;
 };
 
 const DownloadFeedbackPDF = ({
@@ -64,7 +64,7 @@ const DownloadFeedbackPDF = ({
       doc.text('Breakdown:', 15, y);
       y += 10;
       doc.setFont('helvetica', 'normal');
-      feedback.categoryScores.forEach((category: any, index: number) => {
+      feedback.categoryScores.forEach((category, index: number) => {
         doc.text(
           `${index + 1}. ${category.name} (${category.score}/100)`,
           15,

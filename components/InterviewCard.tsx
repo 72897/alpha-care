@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { getCurrentUser } from '@/lib/actions/auth.action';
 import { getFeedbackByInterviewId } from '@/lib/actions/general.action';
 import dayjs from 'dayjs';
 import Image from 'next/image';
@@ -10,12 +11,12 @@ const InterviewCard = async ({
   userId,
   role,
   type,
-  techstack,
   createdAt,
 }: InterviewCardProps) => {
+  const currentUser = await getCurrentUser();
   const feedback =
-    userId && id
-      ? await getFeedbackByInterviewId({ interviewId: id, userId })
+    currentUser?.id && id
+      ? await getFeedbackByInterviewId({ interviewId: id, userId: currentUser.id })
       : null;
 
   //
@@ -64,13 +65,13 @@ const InterviewCard = async ({
 
             <div className='flex flex-row gap-2 items-center mt-3'>
               <Image src='/star.svg' alt='star' width={22} height={22} />
-              <p>{feedback?.totalScore || '---' / 100}</p>
+              <p>{feedback?.totalScore || '---'} / 100</p>
             </div>
           </div>
 
           <p className='line-clamp-2 mt-5'>
             {feedback?.finalAssessment ||
-              "You haven't taken the intervview yet. Take it now to improve your skill"}
+              "You haven't taken the checkup yet. Take it now to knnow your health"}
           </p>
         </div>
 
