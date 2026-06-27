@@ -48,7 +48,7 @@ Alpha-Care is a state-of-the-art virtual health and wellness companion applicati
 2. **Configure Environment Variables:**
    Create a `.env.local` file in the root directory and add the following:
    ```env
-   # Google Gemini API
+   # Google Gemini API (Ensure this and the other variables below are added to your deployment/Vercel environment variables)
    GEMINI_API_KEY=your_gemini_api_key
 
    # Firebase Client Config
