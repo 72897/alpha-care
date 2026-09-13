@@ -6,6 +6,7 @@ import './globals.css';
 const monaSans = Mona_Sans({
   variable: '--font-mona-sans',
   subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' className='dark'>
-      <body className={`${monaSans.className} antialiased pattern`}>
+      <body className={`${monaSans.variable} ${monaSans.className} antialiased pattern`}>
         {children}
 
         <Toaster />
