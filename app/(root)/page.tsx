@@ -5,20 +5,21 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import InterviewCard from '@/components/InterviewCard';
-import { getCurrentUser } from '@/lib/actions/auth.action';
+import { getCurrentUser } from '@/lib/session';
 import {
-  getInterviewsByUserId,
   getLatestInterviews,
+  getUserCheckups,
 } from '@/lib/actions/general.action';
 
 const page = async () => {
   const user = await getCurrentUser();
   if (!user) redirect('/sign-in');
 
-  const [userInterviews, latestInterviews] = await Promise.all([
-    getInterviewsByUserId(),
-    getLatestInterviews({ userId: user.id }),
-  ]);
+  const [{ interviews: userInterviews, feedbackByInterviewId }, latestInterviews] =
+    await Promise.all([
+      getUserCheckups(),
+      getLatestInterviews({ userId: user.id }),
+    ]);
 
   const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
   const hasUpcomingInterviews = (latestInterviews?.length ?? 0) > 0;
@@ -55,7 +56,11 @@ const page = async () => {
         <div className='interviews-section'>
           {hasPastInterviews ? (
             userInterviews?.map((interview) => (
-              <InterviewCard {...interview} key={interview.id} />
+              <InterviewCard
+                {...interview}
+                key={interview.id}
+                feedback={feedbackByInterviewId[interview.id] ?? null}
+              />
             ))
           ) : (
             <p>You haven&apos;t taken any checkup yet</p>
@@ -68,7 +73,11 @@ const page = async () => {
         <div className='interviews-section'>
           {hasUpcomingInterviews ? (
             latestInterviews?.map((interview) => (
-              <InterviewCard {...interview} key={interview.id} />
+              <InterviewCard
+                {...interview}
+                key={interview.id}
+                feedback={feedbackByInterviewId[interview.id] ?? null}
+              />
             ))
           ) : (
             <p>There are no new checkup available yet</p>

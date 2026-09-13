@@ -1,15 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { interviewer } from '@/constants';
+import { END_CALL_FUNCTION_NAME, getAgentConfig } from '@/constants';
 import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
-import { vapi } from '@/lib/vapi.sdk';
+import {
+  createAgentSession,
+  createMicrophone,
+  createPlayer,
+} from '@/lib/deepgram.sdk';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
+import type {
+  AgentSession,
+  AgentMicrophone,
+  AgentPlayer,
+  FunctionCallRequestMessage,
+} from '@deepgram/agents';
 
 enum CallStatus {
   INACTIVE = 'INACTIVE',
@@ -32,148 +41,287 @@ const Agent = ({
 }: AgentProps) => {
   const router = useRouter();
   const [isSpeaking, setIsSpeaking] = useState(false);
-
-  const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
-  // Replace with actual call status
-  // Replace with actual speaking state
-
+  const [callStatus, setCallStatus] =
+    useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
-  // Replace with actual messages
 
-  useEffect(() => {
-    const onCallStart = () => {
-      setCallStatus(CallStatus.ACTIVE);
-    };
-    const onCallEnd = () => {
-      setCallStatus(CallStatus.FINISHED);
-    };
+  const sessionRef = useRef<AgentSession | null>(null);
+  const micRef = useRef<AgentMicrophone | null>(null);
+  const playerRef = useRef<AgentPlayer | null>(null);
+  // Guards the post-call handoff so it only runs once per call.
+  const submittedRef = useRef(false);
+  // Mirrors `isSpeaking` for the hang-up poll, which runs outside React state.
+  const speakingRef = useRef(false);
+  const hangupTimerRef = useRef<number | null>(null);
 
-    const onMessage = (message: Message) => {
-      if (message.type === 'transcript' && message.transcriptType === 'final') {
-        const newMessage = { role: message.role, content: message.transcript };
+  const fetchToken = async (): Promise<string> => {
+    const res = await fetch('/api/deepgram/token');
+    const data = await res.json();
+    if (!data.token) {
+      throw new Error(data.error || 'Failed to get Deepgram token');
+    }
+    return data.token;
+  };
 
+  const handleMessage = (message: {
+    type: string;
+    role?: string;
+    content?: string;
+  }) => {
+    if (message.type === 'ConversationText') {
+      const role = (message.role ?? 'user') as SavedMessage['role'];
+      const content = message.content ?? '';
+      if (content) {
+        const newMessage: SavedMessage = { role, content };
         setMessages((prev) => [...prev, newMessage]);
       }
+    }
+  };
+
+  const handleDisconnect = useCallback(async () => {
+    if (hangupTimerRef.current !== null) {
+      window.clearTimeout(hangupTimerRef.current);
+      hangupTimerRef.current = null;
+    }
+    if (micRef.current) {
+      micRef.current.stop();
+      micRef.current = null;
+    }
+    if (sessionRef.current) {
+      sessionRef.current.disconnect();
+      sessionRef.current = null;
+    }
+    if (playerRef.current) {
+      playerRef.current.interrupt();
+      playerRef.current.dispose();
+      playerRef.current = null;
+    }
+    speakingRef.current = false;
+    setIsSpeaking(false);
+    setCallStatus(CallStatus.FINISHED);
+  }, []);
+
+  /**
+   * The agent calls `end_call` once it has said goodbye, but the goodbye audio
+   * is usually still streaming at that point — cutting the socket immediately
+   * would clip it. So poll until the agent has stopped speaking and the player
+   * has drained, with a hard ceiling so a stalled stream can't hang the call.
+   */
+  const scheduleHangup = useCallback(() => {
+    if (hangupTimerRef.current !== null) return;
+
+    const deadline = Date.now() + 25000;
+    const tick = () => {
+      const remaining = playerRef.current?.getRemainingPlaybackTime() ?? 0;
+      if ((!speakingRef.current && remaining <= 0.1) || Date.now() > deadline) {
+        hangupTimerRef.current = null;
+        handleDisconnect();
+        return;
+      }
+      hangupTimerRef.current = window.setTimeout(tick, 250);
     };
 
-    const onSpeechStart = () => setIsSpeaking(true);
-    const onSpeechEnd = () => setIsSpeaking(false);
-    const onError = (error: Error) => console.log('Error:', error);
+    // Give TTS a moment to start: the function call can land before the
+    // goodbye audio does, and an empty player would otherwise read as "done".
+    hangupTimerRef.current = window.setTimeout(tick, 1500);
+  }, [handleDisconnect]);
 
-    vapi.on('call-start', onCallStart);
-    vapi.on('call-end', onCallEnd);
-    vapi.on('message', onMessage);
-    vapi.on('speech-start', onSpeechStart);
-    vapi.on('speech-end', onSpeechEnd);
-    vapi.on('error', onError);
+  const handleCall = async () => {
+    if (callStatus === CallStatus.ACTIVE) {
+      return;
+    }
 
+    setCallStatus(CallStatus.CONNECTING);
+    submittedRef.current = false;
+    setMessages([]);
+    toast.loading(
+      type === 'interview'
+        ? 'Starting your checkup...'
+        : 'Connecting you to the front desk...'
+    );
+
+    try {
+      const token = await fetchToken();
+      const agentConfig = getAgentConfig({ type, userName, questions });
+
+      const session = createAgentSession({
+        auth: { tokenFactory: () => Promise.resolve(token) },
+        agent: agentConfig,
+        audio: {
+          output: { encoding: 'linear16', sampleRate: 24000 },
+        },
+      });
+
+      const player = createPlayer();
+      player.setVolume(1.0);
+
+      session.on('conversation-text', handleMessage);
+      session.on('agent-started-speaking', () => {
+        speakingRef.current = true;
+        setIsSpeaking(true);
+      });
+      session.on('agent-audio-done', () => {
+        speakingRef.current = false;
+        setIsSpeaking(false);
+      });
+      session.on('user-started-speaking', () => player.interrupt());
+      session.on(
+        'function-call-request',
+        (msg: FunctionCallRequestMessage) => {
+          for (const fn of msg.functions ?? []) {
+            if (fn.name !== END_CALL_FUNCTION_NAME) continue;
+            session.sendFunctionCallResponse(
+              fn.id,
+              fn.name,
+              JSON.stringify({ success: true })
+            );
+            scheduleHangup();
+          }
+        }
+      );
+      session.on(
+        'error',
+        (msg: { type: 'Error'; description: string; code: string }) => {
+          console.error('Deepgram error:', msg);
+          toast.dismiss();
+          toast.error('Connection error. Please try again.');
+          setCallStatus(CallStatus.INACTIVE);
+        }
+      );
+      session.on('connected', () => {
+        toast.dismiss();
+        setCallStatus(CallStatus.ACTIVE);
+      });
+      session.on('disconnected', () => {
+        setCallStatus(CallStatus.FINISHED);
+      });
+
+      session.on('audio', (chunk: ArrayBuffer) => {
+        player.queue(chunk);
+      });
+
+      sessionRef.current = session;
+      playerRef.current = player;
+
+      await session.connect();
+
+      const mic = createMicrophone((data: ArrayBuffer) => {
+        session.sendAudio(data);
+      });
+
+      mic.on('error', (err: Error) => {
+        console.error('Microphone error:', err);
+      });
+
+      micRef.current = mic;
+      await mic.start();
+    } catch (error) {
+      console.error('Failed to start call:', error);
+      toast.dismiss();
+      toast.error('Failed to connect. Please check your Deepgram API key.');
+      setCallStatus(CallStatus.INACTIVE);
+    }
+  };
+
+  const handleGenerateFeedback = useCallback(
+    async (messages: SavedMessage[]) => {
+      // Nothing was said — Gemini would be scoring an empty transcript.
+      if (messages.length === 0) {
+        toast.error('No conversation was recorded. Please try again.');
+        router.push('/');
+        return;
+      }
+
+      toast.loading('Writing up your checkup...');
+      const { success, feedbackId: id } = await createFeedback({
+        interviewId: interviewId!,
+        userId: userId!,
+        transcript: messages,
+      });
+      toast.dismiss();
+
+      if (success && id) {
+        router.push(`/interview/${interviewId}/feedback/`);
+      } else {
+        toast.error('Failed to generate your feedback.');
+        router.push('/');
+      }
+    },
+    [interviewId, userId, router]
+  );
+
+  const handleGenerateInterview = useCallback(
+    async (messages: SavedMessage[]) => {
+      // Nothing was said — no point asking Gemini to build questions from air.
+      if (messages.length === 0) {
+        toast.error('No conversation was recorded. Please try again.');
+        router.push('/');
+        return;
+      }
+
+      try {
+        toast.loading('Booking your appointment...');
+        const response = await fetch('/api/vapi/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userid: userId,
+            transcript: messages,
+          }),
+        });
+        const data = await response.json();
+        toast.dismiss();
+
+        if (data.success && data.interviewId) {
+          toast.success('Appointment booked — your checkup is ready below.');
+          router.push('/');
+          return;
+        }
+
+        toast.error('Failed to book your appointment.');
+        router.push('/');
+      } catch (error) {
+        console.error('Error saving checkup:', error);
+        toast.dismiss();
+        toast.error('Error booking your appointment.');
+        router.push('/');
+      }
+    },
+    [userId, router]
+  );
+
+  useEffect(() => {
+    // `disconnected` and the END button both land on FINISHED, and `messages`
+    // is a dependency, so without this guard the handoff can fire twice and
+    // create duplicate checkups.
+    if (callStatus !== CallStatus.FINISHED || submittedRef.current) return;
+    submittedRef.current = true;
+
+    if (type === 'generate') {
+      handleGenerateInterview(messages);
+    } else {
+      handleGenerateFeedback(messages);
+    }
+  }, [
+    messages,
+    callStatus,
+    type,
+    handleGenerateInterview,
+    handleGenerateFeedback,
+  ]);
+
+  // Leaving the page mid-call would otherwise leave the mic and socket open.
+  useEffect(() => {
     return () => {
-      vapi.off('call-start', onCallStart);
-      vapi.off('call-end', onCallEnd);
-      vapi.off('message', onMessage);
-      vapi.off('speech-start', onSpeechStart);
-      vapi.off('speech-end', onSpeechEnd);
-      vapi.off('error', onError);
+      if (hangupTimerRef.current !== null) {
+        window.clearTimeout(hangupTimerRef.current);
+      }
+      micRef.current?.stop();
+      sessionRef.current?.disconnect();
+      playerRef.current?.dispose();
     };
   }, []);
 
-  const handleGenerateFeedback = useCallback(async (messages: SavedMessage[]) => {
-    console.log('Generating feedback here');
-
-    //Create a server action that Generate feedback and save it to the database
-
-    const { success, feedbackId: id } = await createFeedback({
-      interviewId: interviewId!,
-      userId: userId!,
-      transcript: messages,
-    });
-    if (success && id) {
-      router.push(`/interview/${interviewId}/feedback/`);
-    } else {
-      console.log('Error saving feedback');
-      router.push('/');
-    }
-  }, [interviewId, userId, router]);
-
-  const handleGenerateInterview = useCallback(async (messages: SavedMessage[]) => {
-    try {
-      toast.loading('Analyzing conversation and scheduling checkup...');
-      const response = await fetch('/api/vapi/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userid: userId,
-          transcript: messages,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.dismiss();
-        toast.success('Checkup successfully created!');
-      } else {
-        toast.dismiss();
-        toast.error('Failed to save checkup.');
-      }
-    } catch (error) {
-      console.error('Error saving checkup:', error);
-      toast.dismiss();
-      toast.error('Error saving checkup.');
-    } finally {
-      router.push('/');
-    }
-  }, [userId, router]);
-
-  useEffect(() => {
-    if (callStatus === CallStatus.FINISHED) {
-      if (type === 'generate') {
-        handleGenerateInterview(messages);
-      } else {
-        handleGenerateFeedback(messages);
-      }
-    }
-  }, [messages, callStatus, type, handleGenerateInterview, handleGenerateFeedback]);
-
-  const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
-  // console.log("Workflow ID:", workflowId);
-  // console.log("User:", userName, userId);
-
-  const handleCall = async () => {
-    if (type === 'generate') {
-      if (!workflowId) {
-        toast.error('Workflow ID is missing. Check your .env.local file.');
-        return;
-      }
-      setCallStatus(CallStatus.CONNECTING);
-      await vapi.start(workflowId, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
-    } else {
-      setCallStatus(CallStatus.CONNECTING);
-      let formattedQuestions = '';
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `${question}`)
-          .join('\n');
-      }
-
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
-    }
-  };
-  const handleDisconnect = async () => {
-    setCallStatus(CallStatus.FINISHED);
-    vapi.stop();
-  };
-
-  const latestMessage = messages[messages.length - 1]?.content;
   const isCallInactiveOrFinished =
     callStatus === CallStatus.INACTIVE || callStatus === CallStatus.FINISHED;
 
@@ -186,14 +334,14 @@ const Agent = ({
           <div className='avatar'>
             <Image
               src='/ai-avatar.png'
-              alt='vapi'
+              alt='deepgram'
               width={65}
               height={65}
               className='object-cover'
             />
             {isSpeaking && <span className='animate-speak'></span>}
           </div>
-          <h3>AI Consultant</h3>
+          <h3>{type === 'interview' ? 'Consulting Doctor' : 'Front Desk'}</h3>
         </div>
 
         <div className='card-border'>
@@ -216,13 +364,13 @@ const Agent = ({
         <div className='transcript-border'>
           <div className='transcript'>
             <p
-              key={latestMessage}
+              key={messages[messages.length - 1]?.content}
               className={cn(
                 'transition-opacity duration-500 opacity-0',
                 'animate-fadeIn opacity-100'
               )}
             >
-              {latestMessage}{' '}
+              {messages[messages.length - 1]?.content}
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import DownloadFeedbackPDF from '@/components/DownloadFeedback';
 import { Button } from '@/components/ui/button';
-import { getCurrentUser } from '@/lib/actions/auth.action';
+import { getCurrentUser } from '@/lib/session';
 import {
   getFeedbackByInterviewId,
   getInterviewsById,
@@ -15,15 +15,14 @@ const page = async ({ params }: RouteParams) => {
   const user = await getCurrentUser();
   if (!user) redirect('/sign-in');
 
-  const interview = await getInterviewsById(id);
-  if (!interview) redirect('/');
-  const feedback = await getFeedbackByInterviewId({
-    interviewId: id,
-    userId: user.id,
-  });
-  if (!feedback) redirect('/');
+  // Independent reads, so they overlap instead of running back to back.
+  const [interview, feedback] = await Promise.all([
+    getInterviewsById(id),
+    getFeedbackByInterviewId({ interviewId: id, userId: user.id }),
+  ]);
 
-  console.log('feedback', feedback);
+  if (!interview) redirect('/');
+  if (!feedback) redirect('/');
 
   return (
     <>

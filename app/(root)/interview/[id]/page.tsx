@@ -1,25 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
 import Agent from '@/components/Agent';
-import { getCurrentUser } from '@/lib/actions/auth.action';
+import { getCurrentUser } from '@/lib/session';
 import { getInterviewsById } from '@/lib/actions/general.action';
 import { redirect } from 'next/navigation';
 
 const page = async ({ params }: RouteParams) => {
   const { id } = await params;
 
-  const user = await getCurrentUser();
-  const interview = await getInterviewsById(id);
+  const [user, interview] = await Promise.all([
+    getCurrentUser(),
+    getInterviewsById(id),
+  ]);
 
   if (!interview) redirect('/');
 
-  const seed = Math.random().toString();
-
-  const getRandomSeed = () => Math.floor(Math.random() * 10000);
-
+  // Seeded from the id so the avatars are stable rather than re-rolled (and
+  // re-fetched from Dicebear) on every render.
   const avatarURLs = Array.from(
     { length: 3 },
-    () =>
-      `https://api.dicebear.com/7.x/bottts/svg?seed=health-${getRandomSeed()}`
+    (_, index) => `https://api.dicebear.com/7.x/bottts/svg?seed=health-${id}-${index}`
   );
 
   return (
@@ -28,7 +27,7 @@ const page = async ({ params }: RouteParams) => {
         <div className='flex flex-row gap-4 items-center '>
           <div className='flex flex-row gap-4'>
             <img
-              src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`}
+              src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${id}`}
               alt='avatar'
               width={20}
               height={20}

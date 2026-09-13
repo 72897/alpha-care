@@ -1,37 +1,34 @@
 /* eslint-disable @next/next/no-img-element */
-import { getCurrentUser } from '@/lib/actions/auth.action';
-import { getFeedbackByInterviewId } from '@/lib/actions/general.action';
 import dayjs from 'dayjs';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from './ui/button';
-const InterviewCard = async ({
+
+// Feedback is passed in rather than fetched here. Fetching it per card meant a
+// session verification plus a Firestore query for every card on the page, so a
+// dashboard with ten checkups paid it ten times over.
+const InterviewCard = ({
   id,
   role,
   type,
   createdAt,
-}: InterviewCardProps) => {
-  const currentUser = await getCurrentUser();
-  const feedback =
-    currentUser?.id && id
-      ? await getFeedbackByInterviewId({ interviewId: id, userId: currentUser.id })
-      : null;
-
-  //
+  feedback = null,
+}: InterviewCardProps & { feedback?: Feedback | null }) => {
   const normalizedType = /mix/gi.test(type) ? 'Medium' : type;
 
   const formattedDate = dayjs(
     feedback?.createdAt || createdAt || Date.now()
   ).format('YYYY-MM-DD');
 
-  const seed = Math.random().toString();
-
-  const getRandomSeed = () => Math.floor(Math.random() * 10000);
+  // Seeded from the interview id so the avatars stay put between renders.
+  // Math.random() here meant every navigation produced new faces and four
+  // fresh Dicebear requests per card.
+  const seed = id ?? role;
 
   const avatarURLs = Array.from(
     { length: 3 },
-    () =>
-      `https://api.dicebear.com/7.x/bottts/svg?seed=health-${getRandomSeed()}`
+    (_, index) =>
+      `https://api.dicebear.com/7.x/bottts/svg?seed=health-${seed}-${index}`
   );
 
   return (

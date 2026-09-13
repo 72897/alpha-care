@@ -1,5 +1,5 @@
-import { getCurrentUser } from '@/lib/actions/auth.action';
-import { getInterviewsByUserId } from '@/lib/actions/general.action';
+import { getCurrentUser } from '@/lib/session';
+import { getUserCheckups } from '@/lib/actions/general.action';
 import { redirect } from 'next/navigation';
 import InterviewCard from '@/components/InterviewCard';
 import { ChevronLeft } from 'lucide-react';
@@ -10,7 +10,8 @@ const HistoryPage = async () => {
   const user = await getCurrentUser();
   if (!user) redirect('/sign-in');
 
-  const userInterviews = await getInterviewsByUserId();
+  const { interviews: userInterviews, feedbackByInterviewId } =
+    await getUserCheckups();
   const hasCheckups = userInterviews && userInterviews.length > 0;
 
   return (
@@ -28,7 +29,11 @@ const HistoryPage = async () => {
       <div className='interviews-section'>
         {hasCheckups ? (
           userInterviews.map((interview) => (
-            <InterviewCard {...interview} key={interview.id} />
+            <InterviewCard
+              {...interview}
+              key={interview.id}
+              feedback={feedbackByInterviewId[interview.id] ?? null}
+            />
           ))
         ) : (
           <div className='bg-white/5 border border-white/10 rounded-2xl p-12 text-center text-gray-300'>

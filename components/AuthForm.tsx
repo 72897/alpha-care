@@ -81,13 +81,22 @@ const AuthForm = ({ type }: { type: FormType }) => {
           return;
         }
 
-        await signIn({
+        const result = await signIn({
           email,
           idToken,
         });
 
+        if (result && !result.success) {
+          toast.error(result.message);
+          return;
+        }
+
         toast.success('Signed in successfully.');
-        router.push('/');
+        // The dashboard was rendered for a signed-out visitor before this, so
+        // its cached entry is a redirect to /sign-in. Without the refresh the
+        // router can replay that and bounce straight back here.
+        router.replace('/');
+        router.refresh();
       }
     } catch (error) {
       console.log(error);
@@ -138,8 +147,18 @@ const AuthForm = ({ type }: { type: FormType }) => {
               type='password'
             />
 
-            <Button className='btn' type='submit'>
-              {isSignIn ? 'Sign In' : 'Create an Account'}
+            <Button
+              className='btn'
+              type='submit'
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting
+                ? isSignIn
+                  ? 'Signing in...'
+                  : 'Creating account...'
+                : isSignIn
+                ? 'Sign In'
+                : 'Create an Account'}
             </Button>
           </form>
         </Form>

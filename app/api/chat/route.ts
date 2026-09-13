@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { getCurrentUser } from "@/lib/actions/auth.action";
+import { getCurrentUser } from "@/lib/session";
 import { db } from "@/firebase/admin";
 
 export async function POST(request: Request) {
@@ -14,54 +14,57 @@ export async function POST(request: Request) {
       messages: { role: "user" | "assistant" | "system"; content: string }[];
     };
 
-    // Fetch user's checkups and feedbacks from Firestore to build context
-    const interviewsSnapshot = await db
-      .collection("interviews")
-      .where("userId", "==", user.id)
-      .get();
+    // Both reads are independent of each other, so overlap them rather than
+    // waiting for the interviews before starting on the feedback.
+    const [interviewsSnapshot, feedbackSnapshot] = await Promise.all([
+      db.collection("interviews").where("userId", "==", user.id).get(),
+      db.collection("feedback").where("userId", "==", user.id).get(),
+    ]);
 
     const interviews = interviewsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Interview[];
 
-    interviews.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-    const slicedInterviews = interviews.slice(0, 10);
+    const interviewById = new Map(interviews.map((i) => [i.id, i]));
 
-    // Fetch feedbacks
-    let feedbackSummary = "";
-    if (slicedInterviews.length > 0) {
-      const feedbackSnapshot = await db
-        .collection("feedback")
-        .where("userId", "==", user.id)
-        .get();
-
-      const feedbacks = feedbackSnapshot.docs.map((doc) => ({
+    const feedbacks = (
+      feedbackSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      })) as Feedback[];
+      })) as Feedback[]
+    )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+      )
+      .slice(0, 10);
 
-      feedbacks.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-      const slicedFeedbacks = feedbacks.slice(0, 10);
+    // Categories are chosen per checkup now, so list whatever the report
+    // actually contains instead of probing for a fixed set of names.
+    const feedbackSummary = feedbacks
+      .map((f, index) => {
+        const match = f.interviewId
+          ? interviewById.get(f.interviewId)
+          : undefined;
+        const focusName = match ? `${match.role} (${match.type})` : "General";
+        const categories =
+          f.categoryScores
+            ?.map((c) => `- ${c.name}: ${c.score}/100 — ${c.comment}`)
+            .join("\n") || "- No category breakdown recorded";
 
-      feedbackSummary = slicedFeedbacks
-        .map((f, index) => {
-          const matchInt = slicedInterviews.find((i) => i.id === f.interviewId);
-          const focusName = matchInt ? `${matchInt.role} (${matchInt.type})` : "General";
-          return `Checkup #${index + 1} - ${focusName} on ${new Date(f.createdAt).toLocaleDateString()}:
+        return `Checkup #${index + 1} - ${focusName} on ${new Date(
+          f.createdAt
+        ).toLocaleDateString()}:
 - Total Score: ${f.totalScore}/100
-- Sleep Quality: ${f.categoryScores?.find((c) => c.name === "Sleep Quality")?.score || "N/A"}/100
-- Nutritional Balance: ${f.categoryScores?.find((c) => c.name === "Nutritional Balance")?.score || "N/A"}/100
-- Stress & Mental Wellness: ${f.categoryScores?.find((c) => c.name === "Stress & Mental Wellness")?.score || "N/A"}/100
-- Physical Activity: ${f.categoryScores?.find((c) => c.name === "Physical Activity")?.score || "N/A"}/100
-- Vital Signs: ${f.categoryScores?.find((c) => c.name === "Vital Signs & Body Metrics")?.score || "N/A"}/100
+${categories}
 - Strengths: ${f.strengths?.join(", ") || "None mentioned"}
 - Areas for Improvement: ${f.areasForImprovement?.join(", ") || "None mentioned"}
-- Doctor's Final Assessment: ${f.finalAssessment}
+- Final Assessment: ${f.finalAssessment}
 `;
-        })
-        .join("\n\n");
-    }
+      })
+      .join("\n\n");
 
     const systemInstruction = `You are AlphaCare AI, a warm, professional, and knowledgeable health companion for the user, ${user.name}.
     Your goal is to help them understand their health history, guide them through wellness tips, and discuss their checkup results.

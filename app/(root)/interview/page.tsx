@@ -1,5 +1,5 @@
 import Agent from '@/components/Agent';
-import { getCurrentUser } from '@/lib/actions/auth.action';
+import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
 const Page = async () => {
@@ -8,7 +8,11 @@ const Page = async () => {
 
   return (
     <>
-      <h3>Checkup</h3>
+      <h3>Book Your Appointment</h3>
+      <p className='text-sm text-light-100 mb-4'>
+        Have a quick word with our front desk about what&apos;s bothering you,
+        and your checkup will be waiting on your dashboard.
+      </p>
 
       <Agent
         userName={user.name}

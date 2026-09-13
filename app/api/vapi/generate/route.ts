@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
       const { text: resultText } = await generateText({
         model: google("gemini-2.5-flash"),
-        prompt: `Analyze the following conversation between an AI Health Consultant and a patient. If the conversation is empty, use the default configuration provided below.
+        prompt: `The following is an appointment intake conversation where an assistant collected a user's basic health details. If the conversation is empty, use the default configuration provided below.
 
         Default Configuration (fallback):
         - Focus Area: ${defaultType}
@@ -46,9 +46,9 @@ export async function POST(request: Request) {
         3. priorityLevel (Low, Medium, or High)
         4. healthTags (Comma-separated symptoms or related tags, e.g., Insomnia, fatigue. Limit to 3 tags)
 
-        Based on these details, generate a list of 5 important and relevant questions to better understand the patient’s condition for their next checkup. The questions will be asked by a voice assistant, so avoid using "/" or "*" or any characters that may disrupt voice rendering.
+        Based on the concern the user described, generate 5 checkup questions that dig deeper into that specific concern. The questions will be read aloud by a voice assistant, so avoid "/" or "*" or any characters that may disrupt voice rendering. Do not phrase them as a diagnosis and do not reference any doctor or staff name.
 
-        Conversation Transcript:
+        Intake Conversation:
         ${formattedTranscript || "No conversation transcript available."}
 
         Return the result strictly as a JSON object with the following keys:
@@ -98,9 +98,12 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
 
-    await db.collection("interviews").add(interview);
+    const docRef = await db.collection("interviews").add(interview);
 
-    return Response.json({ success: true }, { status: 200 });
+    return Response.json(
+      { success: true, interviewId: docRef.id },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error:", error);
     return Response.json({ success: false, error: error }, { status: 500 });

@@ -1,5 +1,5 @@
 # Alpha-Care
-Alpha-Care is a state-of-the-art virtual health and wellness companion application built with Next.js 15, React 19, Tailwind CSS, Google Gemini 2.5 Flash, Firebase, and Vapi.
+Alpha-Care is a state-of-the-art virtual health and wellness companion application built with Next.js 15, React 19, Tailwind CSS, Google Gemini 2.5 Flash, Firebase, and Deepgram Voice Agent.
 
 ## Key Features & User Workflow
 
@@ -9,8 +9,9 @@ Alpha-Care is a state-of-the-art virtual health and wellness companion applicati
 - **History Persistence:** Chat history is stored locally in client-side `localStorage` so it persists securely across page refreshes. A **"Clear Chat"** button is provided to reset the state.
 - **Short & Direct Answers:** Designed to provide concise, doctor-like guidance (restricted to 2-3 sentences or direct bullet points) for optimal readability.
 
-### 2. Conversational Voice Checkups (Vapi Integration)
-- **Virtual Health Assessment:** Users can start interactive vocal wellness checkups. The application uses Vapi and Google Gemini 2.5 Flash (`gemini-2.5-flash`) to generate structured health questions and dialogue dynamically.
+### 2. Conversational Voice Checkups (Deepgram Voice Agent)
+- **Virtual Health Assessment:** Users can start interactive vocal wellness checkups. The application uses the Deepgram Voice Agent SDK with Google Gemini 2.5 Flash (`gemini-2.5-flash`) to generate structured health questions and dialogue dynamically.
+- **Multilingual Support:** Users can toggle between English and Hindi for the voice checkup experience. Speech-to-text uses Deepgram's `nova-3` STT with language-specific models, and text-to-speech uses Deepgram's `aura-2` voice models.
 - **Vitals & Metrics Recording:** Conducts assessments across key health pillars: sleep quality, nutritional balance, stress & mental wellness, physical activity, and vital signs.
 
 ### 3. Detailed Checkup History & Reports
@@ -31,7 +32,7 @@ Alpha-Care is a state-of-the-art virtual health and wellness companion applicati
 ## Tech Stack
 - **Framework:** Next.js (App Router)
 - **UI & Iconography:** Tailwind CSS, Lucide React, React Icons
-- **AI Core:** Google Gemini 2.5 Flash (via `@ai-sdk/google` & `ai`), Vapi
+- **AI Core:** Google Gemini 2.5 Flash (via `@ai-sdk/google` & `ai`), Deepgram Voice Agent
 - **Database & Auth:** Firebase Firestore (Admin SDK on backend, Client SDK on frontend)
 - **PDF Generation:** Client-side HTML-to-PDF generation
 
@@ -50,6 +51,9 @@ Alpha-Care is a state-of-the-art virtual health and wellness companion applicati
    ```env
    # Google Gemini API (Ensure this and the other variables below are added to your deployment/Vercel environment variables)
    GEMINI_API_KEY=your_gemini_api_key
+
+   # Deepgram Voice Agent API Key
+   DEEPGRAM_API_KEY=your_deepgram_api_key
 
    # Firebase Client Config
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key

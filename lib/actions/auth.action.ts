@@ -4,6 +4,8 @@
 import { auth, db } from "@/firebase/admin";
 import { cookies } from "next/headers";
 
+import { getCurrentUserId } from "@/lib/session";
+
 // Session duration (1 week)
 const SESSION_DURATION = 60 * 60 * 24 * 7;
 
@@ -69,17 +71,16 @@ export async function signUp(params: SignUpParams) {
 }
 
 export async function signIn(params: SignInParams) {
-  const { email, idToken } = params;
+  const { idToken } = params;
 
   try {
-    const userRecord = await auth.getUserByEmail(email);
-    if (!userRecord)
-      return {
-        success: false,
-        message: "User does not exist. Create an account.",
-      };
-
+    // No getUserByEmail lookup first: the client has already authenticated to
+    // get this idToken, and createSessionCookie rejects an invalid or revoked
+    // one anyway. The extra call was a second round trip to Google on a path
+    // the user is actively waiting on.
     await setSessionCookie(idToken);
+
+    return { success: true };
   } catch (error: any) {
     console.log("Error", error);
 
@@ -90,46 +91,40 @@ export async function signIn(params: SignInParams) {
   }
 }
 
-// Sign out user by clearing the session cookie
+// Sign out by clearing the session cookie and revoking the session server-side.
+// Clearing the cookie alone left it valid until expiry, so a copy of it would
+// still have worked.
 export async function signOut() {
   const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("session")?.value;
 
   cookieStore.delete("session");
-}
 
-// Get current user from session cookie
-export async function getCurrentUser(): Promise<User | null> {
-  const cookieStore = await cookies();
-
-  const sessionCookie = cookieStore.get("session")?.value;
-  if (!sessionCookie) return null;
+  if (!sessionCookie) return;
 
   try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-
-    // get user info from db
-    const userRecord = await db
-      .collection("users")
-      .doc(decodedClaims.uid)
-      .get();
-    if (!userRecord.exists) return null;
-
-    return {
-      ...userRecord.data(),
-      id: userRecord.id,
-    } as User;
+    const claims = await auth.verifySessionCookie(sessionCookie, false);
+    await Promise.all([
+      auth.revokeRefreshTokens(claims.uid),
+      // getCurrentUser checks this to reject cookies issued before sign-out,
+      // which lets it verify locally instead of paying for a revocation round
+      // trip on every page load.
+      db
+        .collection("users")
+        .doc(claims.uid)
+        .set({ tokensValidAfter: new Date().toISOString() }, { merge: true }),
+    ]);
   } catch (error) {
-    console.log(error);
-
-    // Invalid or expired session
-    return null;
+    // Already invalid, so there is nothing left to revoke.
+    console.log("Sign out revocation skipped:", error);
   }
 }
 
-// Check if user is authenticated
+// Check if user is authenticated. Only needs the session cookie to be valid,
+// so it skips the Firestore `users` read that getCurrentUser does.
 export async function isAuthenticated() {
-  const user = await getCurrentUser();
-  return !!user;
+  const uid = await getCurrentUserId();
+  return !!uid;
 }
 
 
@@ -143,32 +138,25 @@ export async function deleteUser() {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
     const uid = decodedClaims.uid;
 
-    // 1. Delete user from Firestore
-    await db.collection("users").doc(uid).delete();
+    // The two queries are independent, so run them together.
+    const [feedbackSnapshot, interviewSnapshot] = await Promise.all([
+      db.collection("feedback").where("userId", "==", uid).get(),
+      db.collection("interviews").where("userId", "==", uid).get(),
+    ]);
 
-    // If you store nested data like feedback/interviews, delete them too:
-    const feedbackSnapshot = await db
-      .collection("feedback")
-      .where("userId", "==", uid)
-      .get();
+    // Batched, and awaited: the previous version fired the per-doc deletes
+    // without awaiting them, so the function could return (and the process move
+    // on) before the data was actually gone.
+    const batch = db.batch();
+    feedbackSnapshot.forEach((doc) => batch.delete(doc.ref));
+    interviewSnapshot.forEach((doc) => batch.delete(doc.ref));
+    batch.delete(db.collection("users").doc(uid));
+    await batch.commit();
 
-    feedbackSnapshot.forEach((doc) => {
-      doc.ref.delete();
-    });
-
-    const interviewSnapshot = await db
-      .collection("interviews")
-      .where("userId", "==", uid)
-      .get();
-
-    interviewSnapshot.forEach((doc) => {
-      doc.ref.delete();
-    });
-
-    // 2. Delete the Firebase Auth user
+    // Delete the Firebase Auth user
     await auth.deleteUser(uid);
 
-    // 3. Remove session cookie
+    // Remove session cookie
     cookieStore.delete("session");
 
     return { success: true, message: "User and data deleted successfully." };
