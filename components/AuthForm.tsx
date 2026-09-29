@@ -20,11 +20,49 @@ import { Button } from '@/components/ui/button';
 import { signIn, signUp } from '@/lib/actions/auth.action';
 import FormField from './FormField';
 
+function getFirebaseErrorMessage(error: unknown): string {
+  const err = error as { code?: string; message?: string };
+  const code = err?.code || '';
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please sign in.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Invalid email or password. Please try again.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection.';
+    case 'auth/operation-not-allowed':
+      return 'Email/password sign-in is not enabled in Firebase Console.';
+    case 'auth/user-disabled':
+      return 'This user account has been disabled.';
+    default:
+      if (typeof err?.message === 'string') {
+        return err.message
+          .replace(/^Firebase:\s*/i, '')
+          .replace(/\(auth\/[^)]+\)\.?/i, '')
+          .trim();
+      }
+      return 'An unexpected error occurred. Please try again.';
+  }
+}
+
 const authFormSchema = (type: FormType) => {
   return z.object({
-    name: type === 'sign-up' ? z.string().min(3) : z.string().optional(),
-    email: z.string().email(),
-    password: z.string().min(3),
+    name:
+      type === 'sign-up'
+        ? z.string().min(3, 'Name must be at least 3 characters')
+        : z.string().optional(),
+    email: z.string().email('Please enter a valid email address'),
+    password: z
+      .string()
+      .min(6, 'Password must be at least 6 characters'),
   });
 };
 
@@ -99,8 +137,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
         router.refresh();
       }
     } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+      console.error(error);
+      const friendlyMessage = getFirebaseErrorMessage(error);
+      toast.error(friendlyMessage);
     }
   };
 

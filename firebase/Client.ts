@@ -1,5 +1,10 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { inMemoryPersistence, initializeAuth } from "firebase/auth";
+import {
+  getAuth,
+  inMemoryPersistence,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 
 // Public web config. These values ship to the browser by design; access is
 // controlled by Firebase security rules, not by keeping them secret.
@@ -25,6 +30,13 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
  * writing it to IndexedDB only cost time on every sign-in and left a second,
  * independent source of truth that could drift out of sync with the cookie.
  */
-export const auth = initializeAuth(app, {
-  persistence: inMemoryPersistence,
-});
+let auth: Auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: inMemoryPersistence,
+  });
+} catch {
+  auth = getAuth(app);
+}
+
+export { auth };
