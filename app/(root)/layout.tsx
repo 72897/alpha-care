@@ -17,12 +17,12 @@ const Layout = async ({ children }: { children: ReactNode }) => {
         <Link href='/' className='flex items-center gap-2'>
           <Image
             src='/logo.svg'
-            alt='Alpha-Care Logo'
+            alt='Buddhimaan AI Logo'
             width={38}
             height={32}
             priority
           />
-          <h2 className='text-xl font-semibold text-primary'>Alpha-Care</h2>
+          <h2 className='text-xl font-semibold text-primary'>Buddhimaan AI</h2>
         </Link>
 
         <UserMenu name={user.name} email={user.email} />

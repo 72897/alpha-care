@@ -18,7 +18,7 @@ export default function ChatbotPage() {
     {
       role: 'assistant',
       content:
-        "Hello! I am your AlphaCare AI health companion. How can I help you today? You can ask me details about your previous checkup scores, sleep quality, stress levels, or get some wellness tips!",
+        "Hello! I am your Buddhimaan AI health companion. How can I help you today? You can ask me details about your previous checkup scores, sleep quality, stress levels, or get some wellness tips!",
     },
   ]);
   const [input, setInput] = useState('');
@@ -42,7 +42,7 @@ export default function ChatbotPage() {
 
   // Load saved chat on mount
   useEffect(() => {
-    const saved = localStorage.getItem('alphacare_chat_history');
+    const saved = localStorage.getItem('buddhimaan_chat_history') || localStorage.getItem('alphacare_chat_history');
     if (saved) {
       try {
         setMessages(JSON.parse(saved));
@@ -56,7 +56,7 @@ export default function ChatbotPage() {
   // Save chat whenever messages state changes
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('alphacare_chat_history', JSON.stringify(messages));
+      localStorage.setItem('buddhimaan_chat_history', JSON.stringify(messages));
     }
   }, [messages, isLoaded]);
 
@@ -71,10 +71,11 @@ export default function ChatbotPage() {
       {
         role: 'assistant',
         content:
-          "Hello! I am your AlphaCare AI health companion. How can I help you today? You can ask me details about your previous checkup scores, sleep quality, stress levels, or get some wellness tips!",
+          "Hello! I am your Buddhimaan AI health companion. How can I help you today? You can ask me details about your previous checkup scores, sleep quality, stress levels, or get some wellness tips!",
       },
     ];
     setMessages(defaultMsg);
+    localStorage.removeItem('buddhimaan_chat_history');
     localStorage.removeItem('alphacare_chat_history');
   };
 
@@ -166,7 +167,7 @@ export default function ChatbotPage() {
               <Bot className='text-primary size-6' />
             </div>
             <div>
-              <h2 className='text-lg font-bold'>AlphaCare AI Companion</h2>
+              <h2 className='text-lg font-bold'>Buddhimaan AI Companion</h2>
               <span className='text-xs text-green-400 flex items-center gap-1.5'>
                 <span className='size-2 rounded-full bg-green-500 animate-ping' />
                 Online & Ready

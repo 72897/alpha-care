@@ -103,7 +103,7 @@ const DownloadFeedbackPDF = ({
       doc.line(15, y, 195, y);
       doc.setFontSize(10);
       doc.text(
-        '© 2025 Alpha-Care · Built with ❤ by Team Alpha-Care',
+        '© 2025 Buddhimaan AI · Built with ❤ by Team Buddhimaan AI',
         105,
         y + 7,
         { align: 'center' }

@@ -125,7 +125,7 @@ const endCallFunction: ThinkSettings.Functions.Item = {
  * Gemini turns into the checkup questions. Deliberately does not diagnose.
  */
 export const getIntakePrompt = (userName: string) =>
-  `You are the receptionist at AlphaCare, on the phone with ${userName} to book them in for a health checkup.
+  `You are the receptionist at Buddhimaan AI, on the phone with ${userName} to book them in for a health checkup.
 
 Sound like an actual person working a front desk: warm, quick, slightly informal. Not a form, not a script.
 
@@ -189,7 +189,7 @@ Ending the call:
 
 const getGreeting = (phase: "intake" | "checkup", userName: string) =>
   phase === "intake"
-    ? `Hi ${userName}, thanks for calling AlphaCare. What can I book you in for?`
+    ? `Hi ${userName}, thanks for calling Buddhimaan AI. What can I book you in for?`
     : `Hi ${userName}, good to speak with you. So, tell me what's been going on.`;
 
 interface AgentConfigParams {
