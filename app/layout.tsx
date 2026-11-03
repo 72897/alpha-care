@@ -10,7 +10,7 @@ const monaSans = Mona_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Buddhimaan AI',
+  title: 'Alpha-Care',
   description:
     '"An AI-powered tool for checking your health status and getting personalized feedback.',
 };

@@ -27,9 +27,9 @@ const SiteFooter = () => (
   <footer className='bg-gray-950 text-gray-200 py-12 px-6 md:px-16 w-full'>
     <div className='max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8'>
       <div>
-        <h4 className='text-xl font-bold mb-4 text-white'>About Buddhimaan AI</h4>
+        <h4 className='text-xl font-bold mb-4 text-white'>About Alpha-Care</h4>
         <p className='text-sm leading-6 text-gray-400'>
-          Buddhimaan AI is an AI-driven healthcare assistant platform that helps
+          AlphaCare is an AI-driven healthcare assistant platform that helps
           users manage their medical needs, schedule appointments, receive
           personalized health insights, and access virtual consultations — all in
           one place.
@@ -86,13 +86,13 @@ const SiteFooter = () => (
     <Separator className='my-8 bg-gray-700' />
 
     <div className='text-center text-sm text-gray-500'>
-      © {new Date().getFullYear()} Buddhimaan AI. All rights reserved. Built with
+      © {new Date().getFullYear()} Alpha-Care. All rights reserved. Built with
       ❤️ by{' '}
       <a
         href='mailto:kunalsingh203001@gmail.com'
         className='hover:underline text-primary-500'
       >
-        Team Buddhimaan AI
+        Team Alpha-care
       </a>
       .
     </div>

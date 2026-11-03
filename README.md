@@ -1,5 +1,5 @@
-# Buddhimaan AI
-Buddhimaan AI is a state-of-the-art virtual health and wellness companion application built with Next.js 15, React 19, Tailwind CSS, Google Gemini 2.5 Flash, Firebase, and Deepgram Voice Agent.
+# Alpha-Care
+Alpha-Care is a state-of-the-art virtual health and wellness companion application built with Next.js 15, React 19, Tailwind CSS, Google Gemini 2.5 Flash, Firebase, and Deepgram Voice Agent.
 
 ## Key Features & User Workflow
 

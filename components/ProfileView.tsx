@@ -87,12 +87,12 @@ const ProfileView = ({
             <div className='flex items-center gap-2 mb-1.5 justify-center md:justify-start'>
               <Image
                 src='/logo.svg'
-                alt='Buddhimaan AI Logo'
+                alt='Alpha-Care Logo'
                 width={26}
                 height={22}
               />
               <span className='text-xs font-bold text-primary uppercase tracking-wider'>
-                Buddhimaan AI
+                Alpha-Care
               </span>
             </div>
             <h2 className='text-3xl font-bold text-white'>

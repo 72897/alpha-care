@@ -66,7 +66,7 @@ ${categories}
       })
       .join("\n\n");
 
-    const systemInstruction = `You are Buddhimaan AI, a warm, professional, and knowledgeable health companion for the user, ${user.name}.
+    const systemInstruction = `You are AlphaCare AI, a warm, professional, and knowledgeable health companion for the user, ${user.name}.
     Your goal is to help them understand their health history, guide them through wellness tips, and discuss their checkup results.
     
     Here is the patient's recent checkup and feedback history:

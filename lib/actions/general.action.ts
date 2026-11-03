@@ -153,7 +153,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       }),
       schema: feedbackSchema,
       prompt: `
-        Write up the following Buddhimaan AI checkup as a report for the user.
+        Write up the following AlphaCare checkup as a report for the user.
 
       Transcript:
       ${formattedTranscript}
@@ -182,7 +182,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
         `,
       system:
-        "You write up Buddhimaan AI health checkup transcripts as structured reports. Derive the report's categories from what the conversation actually covered rather than a fixed list, and never pad it with categories the transcript did not touch. You may give the most likely explanation for the user's symptoms and concrete next steps, but never name prescription medication or doses, and make clear an in-person examination is what confirms things. Ground every score and comment in the transcript, and be honest about concerns rather than lenient.",
+        "You write up AlphaCare health checkup transcripts as structured reports. Derive the report's categories from what the conversation actually covered rather than a fixed list, and never pad it with categories the transcript did not touch. You may give the most likely explanation for the user's symptoms and concrete next steps, but never name prescription medication or doses, and make clear an in-person examination is what confirms things. Ground every score and comment in the transcript, and be honest about concerns rather than lenient.",
     });
 
     const feedback = await db.collection("feedback").add({
